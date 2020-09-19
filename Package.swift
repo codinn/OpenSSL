@@ -1,4 +1,4 @@
-// swift-tools-version:4.2
+// swift-tools-version:5.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 /**
@@ -29,9 +29,10 @@ let package = Package(
         )
     ],
     targets: [
-        .systemLibrary(
+        .binaryTarget(
             name: "OpenSSL",
-            pkgConfig: "openssl"
+            url: "https://github.com/codinn/OpenSSL/releases/download/1.1.1g/OpenSSL.xcframework.zip",
+            checksum: "eb06df510a464f30fe706b2f462141bd1de9962657ac0a8424251eaa225fed12"
         )
     ]
 )
