@@ -52,4 +52,4 @@ xcodebuild -create-xcframework $ARGS -output "$FWROOT/$FWNAME.xcframework"
 
 echo "Packing and computing checksum"
 zip -rq "$FWROOT/$FWNAME.xcframework.zip" "$FWROOT/$FWNAME.xcframework"
-swift package compute-checksum frameworks/OpenSSL.xcframework.zip
+swift package compute-checksum $FWROOT/$FWNAME.xcframework.zip
