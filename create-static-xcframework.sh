@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FWNAME=OpenSSL
+FWNAME=openssl-apple
 FWROOT=frameworks
 LIBNAME=openssl
 ARGS=
