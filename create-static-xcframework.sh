@@ -31,17 +31,23 @@ if [ -d $FWROOT ]; then
 fi
 
 for SYS in ${ALL_SYSTEMS[@]}; do
-    echo "Creating universal static library for $SYS"
+    echo "Creating universal static libraries for $SYS"
     SYSDIR="$FWROOT/$SYS"
 	SYSDISTS=(bin/${SYS}*)
 	LIPO_LIBS=
+    LIPO_SSL_LIBS=
+    LIPO_CRYPTO_LIBS=
 
 	mkdir -p $SYSDIR
     for DIST in ${SYSDISTS[@]}; do
     	libtool -static -o $DIST/lib/libopenssl.a $DIST/lib/libcrypto.a $DIST/lib/libssl.a
     	LIPO_LIBS+=" $DIST/lib/libopenssl.a"
+        LIPO_SSL_LIBS+=" $DIST/lib/libssl.a"
+        LIPO_CRYPTO_LIBS+=" $DIST/lib/libcrypto.a"
     done
 
+    lipo ${LIPO_SSL_LIBS} -create -output $SYSDIR/libssl.a
+    lipo ${LIPO_CRYPTO_LIBS} -create -output $SYSDIR/libcrypto.a
 	lipo ${LIPO_LIBS} -create -output $SYSDIR/libopenssl.a
 	ARGS+=" -library $SYSDIR/libopenssl.a -headers include/"
 	XCFRAMEWORK_DEPS+=" $SYSDIR/libopenssl.a"
