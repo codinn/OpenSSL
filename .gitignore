@@ -95,4 +95,5 @@ lib
 frameworks
 include/openssl
 *.gz
+*.gz.asc
 .DS_Store

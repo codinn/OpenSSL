@@ -25,14 +25,14 @@ set -u
 # SCRIPT DEFAULTS
 
 # Default version in case no version is specified
-DEFAULTVERSION="1.1.1h"
+DEFAULTVERSION="1.1.1l"
 
 # Default (=full) set of targets (OpenSSL >= 1.1.1) to build
 DEFAULTTARGETS=`cat <<TARGETS
 ios-sim-cross-x86_64 ios-sim-cross-arm64 ios64-cross-arm64 ios64-cross-arm64e
 macos64-x86_64 macos64-arm64
 mac-catalyst-x86_64 mac-catalyst-arm64
-watchos-cross-armv7k watchos-cross-arm64_32 watchos-sim-cross-x86_64
+watchos-cross-armv7k watchos-cross-arm64_32 watchos-sim-cross-x86_64 watchos-sim-cross-i386 watchos-sim-cross-arm64
 tvos-sim-cross-x86_64 tvos64-cross-arm64
 TARGETS`
 
@@ -216,6 +216,20 @@ finish_build_loop()
   if [ -z "${INCLUDE_DIR}" ]; then
     INCLUDE_DIR="${TARGETDIR}/include/openssl"
   fi
+}
+
+gpg_validate()
+{
+  local TARGET=$1
+  local SIG=${2:-${TARGET}.asc}
+
+  GPG_B=$(which gpg)
+  if [ ! -x "${GPG_B}" ]; then
+    echo "WARN: No gpg executable found in PATH. Please consider installing gpg so archive signature validation can proceed."
+    return 1
+  fi
+
+  $GPG_B --keyserver keys.openpgp.org --keyserver-options auto-key-retrieve,include-subkeys --verify-options show-photos --verify "${SIG}" "${TARGET}"
 }
 
 # Init optional command line vars
@@ -449,15 +463,18 @@ echo
 # Download OpenSSL when not present
 OPENSSL_ARCHIVE_BASE_NAME="openssl-${VERSION}"
 OPENSSL_ARCHIVE_FILE_NAME="${OPENSSL_ARCHIVE_BASE_NAME}.tar.gz"
+OPENSSL_ARCHIVE_SIGNATURE_FILE_EXT=".asc"
+OPENSSL_ARCHIVE_SIGNATURE_FILE_NAME="${OPENSSL_ARCHIVE_FILE_NAME}${OPENSSL_ARCHIVE_SIGNATURE_FILE_EXT}"
 if [ ! -e ${OPENSSL_ARCHIVE_FILE_NAME} ]; then
   echo "Downloading ${OPENSSL_ARCHIVE_FILE_NAME}..."
-  OPENSSL_ARCHIVE_URL="https://www.openssl.org/source/${OPENSSL_ARCHIVE_FILE_NAME}"
+  OPENSSL_ARCHIVE_BASE_URL="https://www.openssl.org/source"
+  OPENSSL_ARCHIVE_URL="${OPENSSL_ARCHIVE_BASE_URL}/${OPENSSL_ARCHIVE_FILE_NAME}"
 
   # Check whether file exists here (this is the location of the latest version for each branch)
   # -s be silent, -f return non-zero exit status on failure, -I get header (do not download)
   curl ${CURL_OPTIONS} -sfI "${OPENSSL_ARCHIVE_URL}" > /dev/null
 
-  # If unsuccessful, try the archive
+  # If unsuccessful, update the URL for older versions and try again.
   if [ $? -ne 0 ]; then
     BRANCH=$(echo "${VERSION}" | grep -Eo '^[0-9]\.[0-9]\.[0-9]')
     OPENSSL_ARCHIVE_URL="https://www.openssl.org/source/old/${BRANCH}/${OPENSSL_ARCHIVE_FILE_NAME}"
@@ -475,9 +492,21 @@ if [ ! -e ${OPENSSL_ARCHIVE_FILE_NAME} ]; then
   # Archive was found, so proceed with download.
   # -O Use server-specified filename for download
   curl ${CURL_OPTIONS} -O "${OPENSSL_ARCHIVE_URL}"
+  # also download the gpg signature from the same location
+  curl ${CURL_OPTIONS} -O "${OPENSSL_ARCHIVE_URL}${OPENSSL_ARCHIVE_SIGNATURE_FILE_EXT}"
 
 else
   echo "Using ${OPENSSL_ARCHIVE_FILE_NAME}"
+fi
+
+# Validate archive signature
+if [ -e ${OPENSSL_ARCHIVE_SIGNATURE_FILE_NAME} ]; then
+  gpg_validate "${OPENSSL_ARCHIVE_FILE_NAME}" "${OPENSSL_ARCHIVE_SIGNATURE_FILE_NAME}"
+  if [ $? -ne 0 ]; then
+    echo "WARN: GPG signature validation was unsuccessful."
+  fi
+else
+  echo "WARN: No GPG signature validation performed. (missing ${OPENSSL_ARCHIVE_SIGNATURE_FILE_NAME})"
 fi
 
 # Set reference to custom configuration (OpenSSL 1.1.1)
@@ -571,13 +600,19 @@ if [ ${#OPENSSLCONF_ALL[@]} -gt 1 ]; then
         DEFINE_CONDITION="(TARGET_OS_MACCATALYST || (TARGET_OS_IOS && TARGET_OS_SIMULATOR)) && TARGET_CPU_ARM64"
       ;;
       *_watchos_armv7k.h)
-        DEFINE_CONDITION="TARGET_OS_WATCHOS && TARGET_OS_EMBEDDED && TARGET_CPU_ARMV7K"
+        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_EMBEDDED && TARGET_CPU_ARM"
       ;;
       *_watchos_arm64_32.h)
-        DEFINE_CONDITION="TARGET_OS_WATCHOS && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64_32"
+        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64"
       ;;
       *_watchos_sim_x86_64.h)
-        DEFINE_CONDITION="TARGET_OS_SIMULATOR && TARGET_CPU_X86_64 || TARGET_OS_EMBEDDED"
+        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_SIMULATOR && TARGET_CPU_X86_64"
+      ;;
+      *_watchos_sim_arm64.h)
+        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_SIMULATOR && TARGET_CPU_ARM64"
+      ;;
+      *_watchos_sim_i386.h)
+        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_SIMULATOR && TARGET_CPU_X86"
       ;;
       *_tvos_arm64.h)
         DEFINE_CONDITION="TARGET_OS_TV && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64"
