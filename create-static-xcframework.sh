@@ -44,12 +44,13 @@ for SYS in ${ALL_SYSTEMS[@]}; do
     	LIPO_LIBS+=" $DIST/lib/libopenssl.a"
         LIPO_SSL_LIBS+=" $DIST/lib/libssl.a"
         LIPO_CRYPTO_LIBS+=" $DIST/lib/libcrypto.a"
+        ditto "$DIST/include" "$SYSDIR/include"
     done
 
     lipo ${LIPO_SSL_LIBS} -create -output $SYSDIR/libssl.a
     lipo ${LIPO_CRYPTO_LIBS} -create -output $SYSDIR/libcrypto.a
 	lipo ${LIPO_LIBS} -create -output $SYSDIR/libopenssl.a
-	ARGS+=" -library $SYSDIR/libopenssl.a -headers include/"
+	ARGS+=" -library $SYSDIR/libopenssl.a -headers $SYSDIR/include/"
 	XCFRAMEWORK_DEPS+=" $SYSDIR/libopenssl.a"
 done
 
