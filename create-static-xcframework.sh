@@ -13,7 +13,7 @@ if [ ! -d lib ]; then
 fi
 
 BUILD_TYPE=$1
-FWNAME=OpenSSL
+FWNAME=openssl
 FWROOT=frameworks
 LIBNAME=openssl
 ARGS=

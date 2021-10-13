@@ -6,22 +6,29 @@ import PackageDescription
 let package = Package(
     name: "OpenSSL",
     products: [
+        // openssl.xcframework
+        .library(
+            name: "openssl",
+            targets: ["openssl"]),
+        // OpenSSL libray, can be imported by swift
         .library(
             name: "OpenSSL",
-            targets: ["OpenSSL"]),
+            targets: ["OpenSSL", "openssl"]),
     ],
     dependencies: [
     ],
     targets: [
         .binaryTarget(
-            name: "OpenSSL",
-            url: "https://codinn.com/download/OpenSSL.xcframework.zip",
-            checksum: "1fc651cfb6e6eaf8d3226e9104aeeddebb0f31801de1b4ed7b9d0fe6f9c0c2ac"
+            name: "openssl",
+            url: "https://codinn.com/download/openssl.xcframework.zip",
+            checksum: "ac9be8cdb0845c6d89653a628f507026dec4b6902528bd89532c41ec2344d0d7"
         ),
+        .target(name: "OpenSSL",
+                dependencies: ["openssl"])
     ]
 )
 
 /* 
-xcframework successfully written out to: frameworks/OpenSSL.xcframework
-1fc651cfb6e6eaf8d3226e9104aeeddebb0f31801de1b4ed7b9d0fe6f9c0c2ac
+xcframework successfully written out to: frameworks/openssl.xcframework
+ac9be8cdb0845c6d89653a628f507026dec4b6902528bd89532c41ec2344d0d7
 */
