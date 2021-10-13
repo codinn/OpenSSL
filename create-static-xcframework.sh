@@ -47,6 +47,8 @@ for SYS in ${ALL_SYSTEMS[@]}; do
         ditto "$DIST/include" "$SYSDIR/include"
     done
 
+    # https://developer.apple.com/forums/thread/666335
+    # using lipo is necessary, and is the accepted solution for this.
     lipo ${LIPO_SSL_LIBS} -create -output $SYSDIR/libssl.a
     lipo ${LIPO_CRYPTO_LIBS} -create -output $SYSDIR/libcrypto.a
 	lipo ${LIPO_LIBS} -create -output $SYSDIR/libopenssl.a
