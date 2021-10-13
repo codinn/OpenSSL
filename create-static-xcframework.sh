@@ -57,5 +57,5 @@ echo "Creating xcframework"
 xcodebuild -create-xcframework $ARGS -output "$FWROOT/$FWNAME.xcframework"
 
 echo "Packing and computing checksum"
-zip -rq "$FWROOT/$FWNAME.xcframework.zip" "$FWROOT/$FWNAME.xcframework"
+ditto -c -k --keepParent "$FWROOT/$FWNAME.xcframework" "$FWROOT/$FWNAME.xcframework.zip"
 swift package compute-checksum $FWROOT/$FWNAME.xcframework.zip
