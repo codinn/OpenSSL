@@ -4,24 +4,24 @@
 import PackageDescription
 
 let package = Package(
-    name: "openssl-apple",
+    name: "OpenSSL",
     products: [
         .library(
-            name: "openssl-apple",
-            targets: ["openssl-apple"]),
+            name: "OpenSSL",
+            targets: ["OpenSSL"]),
     ],
     dependencies: [
     ],
     targets: [
         .binaryTarget(
-            name: "openssl-apple",
-            url: "https://github.com/codinn/openssl-apple/releases/download/1.1.1h/openssl-apple.xcframework.zip",
-            checksum: "e8af70f25a44ac11a379510cd2a2a07c1a84ff5ebc49500a83fe6a70a298c365"
+            name: "OpenSSL",
+            url: "https://codinn.com/download/OpenSSL.xcframework.zip",
+            checksum: "e78ff6d0df0d24be5149ddef0d55e52ee1a267e067d74c94a448cd2460c55498"
         ),
     ]
 )
 
 /* 
-xcframework successfully written out to: frameworks/openssl-apple.xcframework
-e8af70f25a44ac11a379510cd2a2a07c1a84ff5ebc49500a83fe6a70a298c365
+xcframework successfully written out to: frameworks/OpenSSL.xcframework
+e78ff6d0df0d24be5149ddef0d55e52ee1a267e067d74c94a448cd2460c55498
 */
