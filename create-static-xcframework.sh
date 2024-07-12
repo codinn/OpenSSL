@@ -20,7 +20,7 @@ ARGS=
 XCFRAMEWORK_DEPS=
 
 if [ $BUILD_TYPE == "full" ]; then
-    ALL_SYSTEMS=("iPhoneOS" "iPhoneSimulator" "AppleTVOS" "AppleTVSimulator" "MacOSX" "Catalyst" "WatchOS" "WatchSimulator")
+    ALL_SYSTEMS=("iPhoneOS" "iPhoneSimulator" "AppleTVOS" "AppleTVSimulator" "MacOSX" "Catalyst" "WatchOS" "WatchSimulator" "XROS" "XRSimulator")
 else
     ALL_SYSTEMS=("iPhoneOS" "iPhoneSimulator" "MacOSX")
 fi
@@ -62,3 +62,4 @@ xcodebuild -create-xcframework $ARGS -output "$FWROOT/$FWNAME.xcframework"
 echo "Packing and computing checksum"
 ditto -c -k --keepParent "$FWROOT/$FWNAME.xcframework" "$FWROOT/$FWNAME.xcframework.zip"
 swift package compute-checksum $FWROOT/$FWNAME.xcframework.zip
+echo "Done"

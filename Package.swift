@@ -20,15 +20,10 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "openssl",
-            url: "https://codinn.com/download/openssl.xcframework.zip",
-            checksum: "db6fce0262b9d6cc10f2312b8c88c08d9127ff083953d02a84b544d73732bc5c"
+            url: "https://github.com/codinn/OpenSSL/releases/download/3.0.14/openssl.xcframework.zip",
+            checksum: "d63947127ead98512975e52f08a7b55c8ac17726c614096862b2953f00d4f7b9"
         ),
         .target(name: "OpenSSL",
                 dependencies: ["openssl"])
     ]
 )
-
-/* 
-xcframework successfully written out to: frameworks/openssl.xcframework
-db6fce0262b9d6cc10f2312b8c88c08d9127ff083953d02a84b544d73732bc5c
-*/

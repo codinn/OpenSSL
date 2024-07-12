@@ -25,7 +25,7 @@ set -u
 # SCRIPT DEFAULTS
 
 # Default version in case no version is specified
-DEFAULTVERSION="1.1.1l"
+DEFAULTVERSION="3.2.0"
 
 # Default (=full) set of targets (OpenSSL >= 1.1.1) to build
 DEFAULTTARGETS=`cat <<TARGETS
@@ -33,15 +33,17 @@ ios-sim-cross-x86_64 ios-sim-cross-arm64 ios64-cross-arm64 ios64-cross-arm64e
 macos64-x86_64 macos64-arm64
 mac-catalyst-x86_64 mac-catalyst-arm64
 watchos-cross-armv7k watchos-cross-arm64_32 watchos-sim-cross-x86_64 watchos-sim-cross-i386 watchos-sim-cross-arm64
-tvos-sim-cross-x86_64 tvos64-cross-arm64
+tvos-sim-cross-x86_64 tvos-sim-cross-arm64 tvos-cross-arm64
+xros-sim-cross-arm64 xros-cross-arm64
 TARGETS`
 
 # Minimum iOS/tvOS SDK version to build for
 IOS_MIN_SDK_VERSION="12.0"
-MACOS_MIN_SDK_VERSION="10.15"
-CATALYST_MIN_SDK_VERSION="10.15"
+MACOS_MIN_SDK_VERSION="10.14"
+CATALYST_MIN_SDK_VERSION="10.14"
 WATCHOS_MIN_SDK_VERSION="4.0"
 TVOS_MIN_SDK_VERSION="12.0"
+XROS_MIN_SDK_VERSION="1.0"
 
 # Init optional env variables (use available variable or default to empty string)
 CURL_OPTIONS="${CURL_OPTIONS:-}"
@@ -60,12 +62,12 @@ echo_help()
   echo "     --catalyst-sdk=SDKVERSION     Override macOS SDK version for Catalyst"
   echo "     --watchos-sdk=SDKVERSION      Override watchOS SDK version"
   echo "     --tvos-sdk=SDKVERSION         Override tvOS SDK version"
+  echo "     --xros-sdk=SDKVERSION         Override xrOS SDK version"
   echo "     --min-ios-sdk=SDKVERSION      Set minimum iOS SDK version (default: $IOS_MIN_SDK_VERSION)"
   echo "     --min-macos-sdk=SDKVERSION    Set minimum macOS SDK version (default: $MACOS_MIN_SDK_VERSION)"
   echo "     --min-watchos-sdk=SDKVERSION  Set minimum watchOS SDK version (default: $WATCHOS_MIN_SDK_VERSION)"
   echo "     --min-tvos-sdk=SDKVERSION     Set minimum tvOS SDK version (default: $TVOS_MIN_SDK_VERSION)"
   echo "     --noparallel                  Disable running make with parallel jobs (make -j)"
-  echo "     --disable-bitcode             Disable embedding Bitcode"
   echo " -v, --verbose                     Enable verbose logging"
   echo "     --verbose-on-error            Dump last 500 lines from log file if an error occurs (for Travis builds)"
   echo "     --version=VERSION             OpenSSL version to build (defaults to ${DEFAULTVERSION})"
@@ -181,6 +183,14 @@ finish_build_loop()
     else
       OPENSSLCONF_SUFFIX="ios_${ARCH}"
     fi
+  elif [[ "${PLATFORM}" == XR* ]]; then
+    LIBSSL_XROS+=("${TARGETDIR}/lib/libssl.a")
+    LIBCRYPTO_XROS+=("${TARGETDIR}/lib/libcrypto.a")
+    if [[ "${PLATFORM}" == XRSimulator* ]]; then
+      OPENSSLCONF_SUFFIX="xros_sim_${ARCH}"
+    else
+      OPENSSLCONF_SUFFIX="xros_${ARCH}"
+    fi
   elif [[ "${PLATFORM}" == Watch* ]]; then
     LIBSSL_WATCHOS+=("${TARGETDIR}/lib/libssl.a")
     LIBCRYPTO_WATCHOS+=("${TARGETDIR}/lib/libcrypto.a")
@@ -237,13 +247,14 @@ ARCHS=""
 BRANCH=""
 CLEANUP=""
 CONFIG_ENABLE_EC_NISTP_64_GCC_128=""
-CONFIG_DISABLE_BITCODE=""
+CONFIG_DISABLE_BITCODE="true"
 CONFIG_NO_DEPRECATED=""
 IOS_SDKVERSION=""
 MACOS_SDKVERSION=""
 CATALYST_SDKVERSION=""
 WATCHOS_SDKVERSION=""
 TVOS_SDKVERSION=""
+XROS_SDKVERSION=""
 LOG_VERBOSE=""
 PARALLEL=""
 TARGETS=""
@@ -266,9 +277,6 @@ case $i in
   --ec-nistp-64-gcc-128)
     CONFIG_ENABLE_EC_NISTP_64_GCC_128="true"
     ;;
-  --disable-bitcode)
-   CONFIG_DISABLE_BITCODE="true"
-   ;;
   -h|--help)
     echo_help
     exit
@@ -307,6 +315,10 @@ case $i in
     ;;
   --min-tvos-sdk=*)
     TVOS_MIN_SDK_VERSION="${i#*=}"
+    shift
+    ;;
+  --min-xros-sdk=*)
+    XROS_MIN_SDK_VERSION="${i#*=}"
     shift
     ;;
   --noparallel)
@@ -396,6 +408,9 @@ fi
 if [ ! -n "${TVOS_SDKVERSION}" ]; then
   TVOS_SDKVERSION=$(xcrun -sdk appletvos --show-sdk-version)
 fi
+if [ ! -n "${XROS_SDKVERSION}" ]; then
+  XROS_SDKVERSION=$(xcrun -sdk xros --show-sdk-version)
+fi
 
 # Truncate to minor version
 MINOR_VERSION=(${MACOS_SDKVERSION//./ })
@@ -450,6 +465,7 @@ echo "  macOS SDK: ${MACOS_SDKVERSION} (min ${MACOS_MIN_SDK_VERSION})"
 echo "  macOS SDK (Catalyst): ${CATALYST_SDKVERSION} (min ${CATALYST_MIN_SDK_VERSION})"
 echo "  watchOS SDK: ${WATCHOS_SDKVERSION} (min ${WATCHOS_MIN_SDK_VERSION})"
 echo "  tvOS SDK: ${TVOS_SDKVERSION} (min ${TVOS_MIN_SDK_VERSION})"
+echo "  xrOS SDK: ${XROS_SDKVERSION} (min ${XROS_MIN_SDK_VERSION})"
 if [ "${CONFIG_DISABLE_BITCODE}" == "true" ]; then
   echo "  Bitcode embedding disabled"
 fi
@@ -472,14 +488,14 @@ if [ ! -e ${OPENSSL_ARCHIVE_FILE_NAME} ]; then
 
   # Check whether file exists here (this is the location of the latest version for each branch)
   # -s be silent, -f return non-zero exit status on failure, -I get header (do not download)
-  curl ${CURL_OPTIONS} -sfI "${OPENSSL_ARCHIVE_URL}" > /dev/null
+  curl ${CURL_OPTIONS} -sfIL "${OPENSSL_ARCHIVE_URL}" > /dev/null
 
   # If unsuccessful, update the URL for older versions and try again.
   if [ $? -ne 0 ]; then
     BRANCH=$(echo "${VERSION}" | grep -Eo '^[0-9]\.[0-9]\.[0-9]')
     OPENSSL_ARCHIVE_URL="https://www.openssl.org/source/old/${BRANCH}/${OPENSSL_ARCHIVE_FILE_NAME}"
 
-    curl ${CURL_OPTIONS} -sfI "${OPENSSL_ARCHIVE_URL}" > /dev/null
+    curl ${CURL_OPTIONS} -sfIL "${OPENSSL_ARCHIVE_URL}" > /dev/null
   fi
 
   # Both attempts failed, so report the error
@@ -491,9 +507,9 @@ if [ ! -e ${OPENSSL_ARCHIVE_FILE_NAME} ]; then
 
   # Archive was found, so proceed with download.
   # -O Use server-specified filename for download
-  curl ${CURL_OPTIONS} -O "${OPENSSL_ARCHIVE_URL}"
+  curl ${CURL_OPTIONS} -LO "${OPENSSL_ARCHIVE_URL}"
   # also download the gpg signature from the same location
-  curl ${CURL_OPTIONS} -O "${OPENSSL_ARCHIVE_URL}${OPENSSL_ARCHIVE_SIGNATURE_FILE_EXT}"
+  curl ${CURL_OPTIONS} -LO "${OPENSSL_ARCHIVE_URL}${OPENSSL_ARCHIVE_SIGNATURE_FILE_EXT}"
 
 else
   echo "Using ${OPENSSL_ARCHIVE_FILE_NAME}"
@@ -551,6 +567,8 @@ LIBSSL_WATCHOS=()
 LIBCRYPTO_WATCHOS=()
 LIBSSL_TVOS=()
 LIBCRYPTO_TVOS=()
+LIBSSL_XROS=()
+LIBCRYPTO_XROS=()
 
 source "${SCRIPTDIR}/scripts/build-loop-targets.sh"
 
@@ -617,8 +635,17 @@ if [ ${#OPENSSLCONF_ALL[@]} -gt 1 ]; then
       *_tvos_arm64.h)
         DEFINE_CONDITION="TARGET_OS_TV && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64"
       ;;
+      *_tvos_sim_arm64.h)
+        DEFINE_CONDITION="TARGET_OS_TV && TARGET_OS_SIMULATOR && TARGET_CPU_ARM64"
+      ;;
       *_tvos_sim_x86_64.h)
         DEFINE_CONDITION="TARGET_OS_TV && TARGET_OS_SIMULATOR && TARGET_CPU_X86_64"
+      ;;
+      *_xros_sim_arm64.h)
+        DEFINE_CONDITION="TARGET_OS_VISION && TARGET_OS_SIMULATOR && TARGET_CPU_ARM64"
+      ;;
+      *_xros_arm64.h)
+        DEFINE_CONDITION="TARGET_OS_VISION && TARGET_CPU_ARM64"
       ;;
       *)
         # Don't run into unexpected cases by setting the default condition to false
