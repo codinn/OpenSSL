@@ -247,7 +247,6 @@ ARCHS=""
 BRANCH=""
 CLEANUP=""
 CONFIG_ENABLE_EC_NISTP_64_GCC_128=""
-CONFIG_DISABLE_BITCODE="true"
 CONFIG_NO_DEPRECATED=""
 IOS_SDKVERSION=""
 MACOS_SDKVERSION=""
@@ -466,9 +465,6 @@ echo "  macOS SDK (Catalyst): ${CATALYST_SDKVERSION} (min ${CATALYST_MIN_SDK_VER
 echo "  watchOS SDK: ${WATCHOS_SDKVERSION} (min ${WATCHOS_MIN_SDK_VERSION})"
 echo "  tvOS SDK: ${TVOS_SDKVERSION} (min ${TVOS_MIN_SDK_VERSION})"
 echo "  xrOS SDK: ${XROS_SDKVERSION} (min ${XROS_MIN_SDK_VERSION})"
-if [ "${CONFIG_DISABLE_BITCODE}" == "true" ]; then
-  echo "  Bitcode embedding disabled"
-fi
 echo "  Number of make threads: ${BUILD_THREADS}"
 if [ -n "${CONFIG_OPTIONS}" ]; then
   echo "  Configure options: ${CONFIG_OPTIONS}"
