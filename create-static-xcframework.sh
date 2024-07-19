@@ -17,7 +17,6 @@ FWNAME=openssl
 FWROOT=frameworks
 LIBNAME=openssl
 ARGS=
-XCFRAMEWORK_DEPS=
 
 if [ $BUILD_TYPE == "full" ]; then
     ALL_SYSTEMS=("iPhoneOS" "iPhoneSimulator" "AppleTVOS" "AppleTVSimulator" "MacOSX" "Catalyst" "WatchOS" "WatchSimulator" "XROS" "XRSimulator")
@@ -53,7 +52,6 @@ for SYS in ${ALL_SYSTEMS[@]}; do
     lipo ${LIPO_CRYPTO_LIBS} -create -output $SYSDIR/libcrypto.a
 	lipo ${LIPO_LIBS} -create -output $SYSDIR/libopenssl.a
 	ARGS+=" -library $SYSDIR/libopenssl.a -headers $SYSDIR/include/"
-	XCFRAMEWORK_DEPS+=" $SYSDIR/libopenssl.a"
 done
 
 echo "Creating xcframework"

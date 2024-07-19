@@ -32,7 +32,7 @@ DEFAULTTARGETS=`cat <<TARGETS
 ios-sim-cross-x86_64 ios-sim-cross-arm64 ios64-cross-arm64 ios64-cross-arm64e
 macos64-x86_64 macos64-arm64
 mac-catalyst-x86_64 mac-catalyst-arm64
-watchos-cross-armv7k watchos-cross-arm64_32 watchos-sim-cross-x86_64 watchos-sim-cross-i386 watchos-sim-cross-arm64
+watchos-cross-arm64_32 watchos-sim-cross-x86_64 watchos-sim-cross-arm64
 tvos-sim-cross-x86_64 tvos-sim-cross-arm64 tvos-cross-arm64
 xros-sim-cross-arm64 xros-cross-arm64
 TARGETS`
@@ -567,104 +567,5 @@ LIBSSL_XROS=()
 LIBCRYPTO_XROS=()
 
 source "${SCRIPTDIR}/scripts/build-loop-targets.sh"
-
-# Copy include directory
-cp -R "${INCLUDE_DIR}" "${CURRENTPATH}/include/"
-
-# Only create intermediate file when building for multiple targets
-# For a single target, opensslconf.h is still present in $INCLUDE_DIR (and has just been copied to the target include dir)
-if [ ${#OPENSSLCONF_ALL[@]} -gt 1 ]; then
-
-  # Prepare intermediate header file
-  # This overwrites opensslconf.h that was copied from $INCLUDE_DIR
-  OPENSSLCONF_INTERMEDIATE="${CURRENTPATH}/include/openssl/opensslconf.h"
-  cp "${CURRENTPATH}/include/opensslconf-template.h" "${OPENSSLCONF_INTERMEDIATE}"
-
-  # Loop all header files
-  LOOPCOUNT=0
-  for OPENSSLCONF_CURRENT in "${OPENSSLCONF_ALL[@]}" ; do
-
-    # Copy specific opensslconf file to include dir
-    cp "${CURRENTPATH}/bin/${OPENSSLCONF_CURRENT}" "${CURRENTPATH}/include/openssl"
-
-    # Determine define condition
-    case "${OPENSSLCONF_CURRENT}" in
-      *_ios_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_IOS && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64"
-      ;;
-      *_ios_arm64e.h)
-        DEFINE_CONDITION="TARGET_OS_IOS && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64E"
-      ;;
-      *_ios_sim_x86_64.h)
-        DEFINE_CONDITION="TARGET_OS_IOS && TARGET_OS_SIMULATOR && TARGET_CPU_X86_64"
-      ;;
-      *_ios_sim_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_IOS && TARGET_OS_SIMULATOR && TARGET_CPU_ARM64"
-      ;;
-      *_macos_x86_64.h)
-        DEFINE_CONDITION="TARGET_OS_OSX && TARGET_CPU_X86_64"
-      ;;
-      *_macos_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_OSX && TARGET_CPU_ARM64"
-      ;;
-      *_catalyst_x86_64.h)
-        DEFINE_CONDITION="(TARGET_OS_MACCATALYST || (TARGET_OS_IOS && TARGET_OS_SIMULATOR)) && TARGET_CPU_X86_64"
-      ;;
-      *_catalyst_arm64.h)
-        DEFINE_CONDITION="(TARGET_OS_MACCATALYST || (TARGET_OS_IOS && TARGET_OS_SIMULATOR)) && TARGET_CPU_ARM64"
-      ;;
-      *_watchos_armv7k.h)
-        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_EMBEDDED && TARGET_CPU_ARM"
-      ;;
-      *_watchos_arm64_32.h)
-        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64"
-      ;;
-      *_watchos_sim_x86_64.h)
-        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_SIMULATOR && TARGET_CPU_X86_64"
-      ;;
-      *_watchos_sim_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_SIMULATOR && TARGET_CPU_ARM64"
-      ;;
-      *_watchos_sim_i386.h)
-        DEFINE_CONDITION="TARGET_OS_WATCH && TARGET_OS_SIMULATOR && TARGET_CPU_X86"
-      ;;
-      *_tvos_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_TV && TARGET_OS_EMBEDDED && TARGET_CPU_ARM64"
-      ;;
-      *_tvos_sim_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_TV && TARGET_OS_SIMULATOR && TARGET_CPU_ARM64"
-      ;;
-      *_tvos_sim_x86_64.h)
-        DEFINE_CONDITION="TARGET_OS_TV && TARGET_OS_SIMULATOR && TARGET_CPU_X86_64"
-      ;;
-      *_xros_sim_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_VISION && TARGET_OS_SIMULATOR && TARGET_CPU_ARM64"
-      ;;
-      *_xros_arm64.h)
-        DEFINE_CONDITION="TARGET_OS_VISION && TARGET_CPU_ARM64"
-      ;;
-      *)
-        # Don't run into unexpected cases by setting the default condition to false
-        DEFINE_CONDITION="0"
-      ;;
-    esac
-
-    # Determine loopcount; start with if and continue with elif
-    LOOPCOUNT=$((LOOPCOUNT + 1))
-    if [ ${LOOPCOUNT} -eq 1 ]; then
-      echo "#if ${DEFINE_CONDITION}" >> "${OPENSSLCONF_INTERMEDIATE}"
-    else
-      echo "#elif ${DEFINE_CONDITION}" >> "${OPENSSLCONF_INTERMEDIATE}"
-    fi
-
-    # Add include
-    echo "# include <openssl/${OPENSSLCONF_CURRENT}>" >> "${OPENSSLCONF_INTERMEDIATE}"
-  done
-
-  # Finish
-  echo "#else" >> "${OPENSSLCONF_INTERMEDIATE}"
-  echo '# error Unable to determine target or target not included in OpenSSL build' >> "${OPENSSLCONF_INTERMEDIATE}"
-  echo "#endif" >> "${OPENSSLCONF_INTERMEDIATE}"
-fi
 
 echo "Done."
