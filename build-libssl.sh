@@ -173,59 +173,6 @@ finish_build_loop()
   # Return to ${CURRENTPATH} and remove source dir
   cd "${CURRENTPATH}"
   rm -r "${SOURCEDIR}"
-
-  # Add references to library files to relevant arrays
-  if [[ "${PLATFORM}" == iPhone* ]]; then
-    LIBSSL_IOS+=("${TARGETDIR}/lib/libssl.a")
-    LIBCRYPTO_IOS+=("${TARGETDIR}/lib/libcrypto.a")
-    if [[ "${PLATFORM}" == iPhoneSimulator* ]]; then
-      OPENSSLCONF_SUFFIX="ios_sim_${ARCH}"
-    else
-      OPENSSLCONF_SUFFIX="ios_${ARCH}"
-    fi
-  elif [[ "${PLATFORM}" == XR* ]]; then
-    LIBSSL_XROS+=("${TARGETDIR}/lib/libssl.a")
-    LIBCRYPTO_XROS+=("${TARGETDIR}/lib/libcrypto.a")
-    if [[ "${PLATFORM}" == XRSimulator* ]]; then
-      OPENSSLCONF_SUFFIX="xros_sim_${ARCH}"
-    else
-      OPENSSLCONF_SUFFIX="xros_${ARCH}"
-    fi
-  elif [[ "${PLATFORM}" == Watch* ]]; then
-    LIBSSL_WATCHOS+=("${TARGETDIR}/lib/libssl.a")
-    LIBCRYPTO_WATCHOS+=("${TARGETDIR}/lib/libcrypto.a")
-    if [[ "${PLATFORM}" == WatchSimulator* ]]; then
-      OPENSSLCONF_SUFFIX="watchos_sim_${ARCH}"
-    else
-      OPENSSLCONF_SUFFIX="watchos_${ARCH}"
-    fi
-  elif [[ "${PLATFORM}" == AppleTV* ]]; then
-    LIBSSL_TVOS+=("${TARGETDIR}/lib/libssl.a")
-    LIBCRYPTO_TVOS+=("${TARGETDIR}/lib/libcrypto.a")
-    if [[ "${PLATFORM}" == AppleTVSimulator* ]]; then
-      OPENSSLCONF_SUFFIX="tvos_sim_${ARCH}"
-    else
-      OPENSSLCONF_SUFFIX="tvos_${ARCH}"
-    fi
-  elif [[ "${PLATFORM}" == Catalyst* ]]; then
-    LIBSSL_CATALYST+=("${TARGETDIR}/lib/libssl.a")
-    LIBCRYPTO_CATALYST+=("${TARGETDIR}/lib/libcrypto.a")
-    OPENSSLCONF_SUFFIX="catalyst_${ARCH}"
-  else
-    LIBSSL_MACOS+=("${TARGETDIR}/lib/libssl.a")
-    LIBCRYPTO_MACOS+=("${TARGETDIR}/lib/libcrypto.a")
-    OPENSSLCONF_SUFFIX="macos_${ARCH}"
-  fi
-
-  # Copy opensslconf.h to bin directory and add to array
-  OPENSSLCONF="opensslconf_${OPENSSLCONF_SUFFIX}.h"
-  cp "${TARGETDIR}/include/openssl/opensslconf.h" "${CURRENTPATH}/bin/${OPENSSLCONF}"
-  OPENSSLCONF_ALL+=("${OPENSSLCONF}")
-
-  # Keep reference to first build target for include file
-  if [ -z "${INCLUDE_DIR}" ]; then
-    INCLUDE_DIR="${TARGETDIR}/include/openssl"
-  fi
 }
 
 gpg_validate()
@@ -549,22 +496,6 @@ fi
 mkdir -p "${CURRENTPATH}/bin"
 mkdir -p "${CURRENTPATH}/lib"
 mkdir -p "${CURRENTPATH}/src"
-
-# Init vars for library references
-INCLUDE_DIR=""
-OPENSSLCONF_ALL=()
-LIBSSL_IOS=()
-LIBCRYPTO_IOS=()
-LIBSSL_MACOS=()
-LIBCRYPTO_MACOS=()
-LIBSSL_CATALYST=()
-LIBCRYPTO_CATALYST=()
-LIBSSL_WATCHOS=()
-LIBCRYPTO_WATCHOS=()
-LIBSSL_TVOS=()
-LIBCRYPTO_TVOS=()
-LIBSSL_XROS=()
-LIBCRYPTO_XROS=()
 
 source "${SCRIPTDIR}/scripts/build-loop-targets.sh"
 
